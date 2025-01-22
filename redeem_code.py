@@ -13,6 +13,7 @@ import hashlib
 import json
 import sys
 import time
+import codecs
 from os.path import exists
 
 import requests
@@ -112,6 +113,10 @@ for player in players:
         URL + "/player", data=request_data, headers=HTTP_HEADER, timeout=30
     )
     login_response = login_request.json()
+    bla = type(login_response["data"]["nickname"])
+    player["current_name"] = login_response["data"]["nickname"].encode().decode('utf-8') # Current player name
+    player["state"] = login_response["data"]["kid"] # Current state
+    player["level"] = login_response["data"]["stove_lv"] # Furnace level. If > 30 then it is FC + FC stage. E.g. 36 is FC1 + 1/5 on way to FC2.
 
     # Login failed for user, report, count error and continue gracefully to complete all other players
     if login_response["msg"] != "success":
@@ -167,6 +172,15 @@ for player in players:
 
 with open(args.results_file, "w", encoding="utf-8") as fp:
     json.dump(results, fp)
+
+# Write out players file in a condensed format. One player a line.
+with codecs.open("new_player.json", "w", encoding="utf-8") as fp:
+    fp.write(
+        '[' +
+        ',\n'.join(json.dumps(i, ensure_ascii=False) for i in players) +
+        ']\n')
+
+    # json.dump(players, fp)
 
 # Print general stats
 print(
